@@ -49,3 +49,20 @@
 		reverse_proxy mediaflow:8888
 	}
 }
+
+{$ALTMOUNT_DOMAIN} {
+	{$TLS}
+	import security
+	import noindex
+
+	# Players only need the stream endpoint, authorized by the download_key in
+	# its URL. The web UI, API, WebDAV and SABnzbd API stay private: AIOStreams
+	# calls them over altmount's INTERFACE port.
+	handle /api/files/stream {
+		reverse_proxy altmount:8080
+	}
+
+	handle {
+		respond 404
+	}
+}

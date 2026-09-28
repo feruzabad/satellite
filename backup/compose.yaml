@@ -31,7 +31,9 @@ services:
       TZ: UTC
     volumes:
       - caddy_data:/mnt/volumes/caddy:ro
+      - altmount_data:/mnt/volumes/altmount:ro
       - ../mediaflow/.env:/mnt/volumes/env/mediaflow/.env:ro
+      - ../altmount/.env:/mnt/volumes/env/altmount/.env:ro
       - ../caddy/.env:/mnt/volumes/env/caddy/.env:ro
       - ../backup/.env:/mnt/volumes/env/backup/.env:ro
       - ./restic-repo:/mnt/restic
@@ -89,6 +91,8 @@ services:
 
 volumes:
   caddy_data:
+    external: true
+  altmount_data:
     external: true
 
 networks:

@@ -21,6 +21,17 @@ tasks:
     cmds:
       - docker compose --env-file mediaflow/.env -f mediaflow/compose.yaml down
 
+  up:altmount:
+    desc: Start AltMount
+    deps: [network]
+    cmds:
+      - docker compose --env-file altmount/.env -f altmount/compose.yaml up -d
+
+  down:altmount:
+    desc: Stop AltMount
+    cmds:
+      - docker compose --env-file altmount/.env -f altmount/compose.yaml down
+
   up:caddy:
     desc: Start Caddy
     deps: [network]
@@ -47,6 +58,7 @@ tasks:
     desc: Start all services
     cmds:
       - task: up:mediaflow
+      - task: up:altmount
       - task: up:caddy
       - task: up:backup
 
@@ -55,4 +67,5 @@ tasks:
     cmds:
       - task: down:backup
       - task: down:caddy
+      - task: down:altmount
       - task: down:mediaflow

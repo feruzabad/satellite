@@ -18,6 +18,7 @@ services:
       MEDIAFLOW_ADMIN: "${MEDIAFLOW_ADMIN:-off}"
       MEDIAFLOW_ADMIN_USER: "${MEDIAFLOW_ADMIN_USER:-}"
       MEDIAFLOW_ADMIN_HASH: "${MEDIAFLOW_ADMIN_HASH:-}"
+      ALTMOUNT_DOMAIN: "${ALTMOUNT_DOMAIN:?}"
       TLS: "${TLS}"
     logging:
       driver: json-file

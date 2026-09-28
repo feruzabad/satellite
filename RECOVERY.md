@@ -31,7 +31,7 @@ survive losing the server.
    created them; without them, Compose warns on every start that the volume
    "was not created by Docker Compose":
    ```sh
-   for s in caddy; do
+   for s in caddy altmount; do
      docker volume create \
        --label com.docker.compose.project=$s \
        --label com.docker.compose.volume=data \
@@ -51,6 +51,7 @@ survive losing the server.
    docker run --rm \
      -e RESTIC_REPOSITORY -e RESTIC_PASSWORD -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
      -v caddy_data:/mnt/volumes/caddy \
+     -v altmount_data:/mnt/volumes/altmount \
      -v "$(pwd)/restore-env:/mnt/volumes/env" \
      mazzolino/restic:1.8.2 restic restore latest --target /
    ```
@@ -63,6 +64,7 @@ survive losing the server.
      -e RESTIC_REPOSITORY=/mnt/restic -e RESTIC_PASSWORD \
      -v "$(pwd)/backup/restic-repo:/mnt/restic:ro" \
      -v caddy_data:/mnt/volumes/caddy \
+     -v altmount_data:/mnt/volumes/altmount \
      -v "$(pwd)/restore-env:/mnt/volumes/env" \
      mazzolino/restic:1.8.2 restic restore latest --target /
    ```
@@ -75,9 +77,10 @@ survive losing the server.
    cp -R restore-env/. . && rm -rf restore-env
    ```
 
-5. Update the value that is tied to the old host: `mediaflow/.env`
-   `INTERFACE`, if it was a VPN IP (e.g. `tailscale ip -4` on the new
-   server). `127.0.0.1` needs no change.
+5. Update the values that are tied to the old host: `mediaflow/.env` and
+   `altmount/.env` `INTERFACE`, if they were a VPN IP (e.g. `tailscale ip -4`
+   on the new server). `127.0.0.1` needs no change. If the VPN IP changed,
+   also update AltMount's and MediaFlow's URLs in AIOStreams.
 
 6. Bring the stack up:
    ```sh
@@ -86,15 +89,16 @@ survive losing the server.
 
 7. Re-apply what lives outside the repo, since none of it was backed up:
    - Provider firewall rules (allow 443/tcp, 80/tcp, 443/udp inbound, deny
-     the rest). On Oracle Cloud: the subnet's security list or the
-     instance's NSG.
-   - DNS: if the server's public IP changed, update `MEDIAFLOW_DOMAIN`'s
-     A/AAAA records.
+     the rest; if outbound is filtered too, allow your usenet provider's NNTP
+     port). On Oracle Cloud: the subnet's security list or the instance's NSG.
+   - DNS: if the server's public IP changed, update `MEDIAFLOW_DOMAIN`'s and
+     `ALTMOUNT_DOMAIN`'s A/AAAA records.
 
 8. Verify:
    ```sh
    docker ps
    curl https://<MEDIAFLOW_DOMAIN>/health
    ```
-   Confirm MediaFlow's web UI loads through your private access method
-   (`http://<INTERFACE>:8888`, or `http://localhost:8888` via an SSH tunnel).
+   Confirm MediaFlow's and AltMount's web UIs load through your private
+   access method (`http://<INTERFACE>:8888` and `:8080`, or through an SSH
+   tunnel), and that AltMount still lists your providers.
