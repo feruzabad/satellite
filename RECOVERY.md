@@ -10,8 +10,9 @@ survive losing the server.
 
 ## Prerequisites on the new server
 
-- Docker and Task installed, and your private access method set up if it
-  needs the host (e.g. VPN installed and authenticated; see README).
+- Docker, Task and Tailscale installed, and Tailscale authenticated to the
+  same tailnet (ideally under the old host name, so its MagicDNS name, which
+  AIOStreams uses, stays the same).
 - The bootstrap secrets, from a password manager (never only on the server
   itself): `RESTIC_PASSWORD`, and if using offsite storage also
   `RESTIC_REPOSITORY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
@@ -78,9 +79,9 @@ survive losing the server.
    ```
 
 5. Update the values that are tied to the old host: `mediaflow/.env` and
-   `altmount/.env` `INTERFACE`, if they were a VPN IP (e.g. `tailscale ip -4`
-   on the new server). `127.0.0.1` needs no change. If the VPN IP changed,
-   also update AltMount's and MediaFlow's URLs in AIOStreams.
+   `altmount/.env` `INTERFACE`, set to the new server's `tailscale ip -4`.
+   If its MagicDNS name changed too, update AltMount's and MediaFlow's URLs
+   in AIOStreams.
 
 6. Bring the stack up:
    ```sh
@@ -99,6 +100,6 @@ survive losing the server.
    docker ps
    curl https://<MEDIAFLOW_DOMAIN>/health
    ```
-   Confirm MediaFlow's and AltMount's web UIs load through your private
-   access method (`http://<INTERFACE>:8888` and `:8080`, or through an SSH
-   tunnel), and that AltMount still lists your providers.
+   Confirm MediaFlow's and AltMount's web UIs load over the tailnet
+   (`http://<INTERFACE>:8888` and `:8080`), and that AltMount still lists
+   your providers.

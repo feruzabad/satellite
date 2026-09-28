@@ -24,8 +24,8 @@ services:
         max-size: "10m"
         max-file: "3"
     ports:
-      # Private access (SSH tunnel or VPN) to the web UI and /metrics, which
-      # Caddy hides by default. Never bind it to a public interface.
+      # Tailnet-only access to the web UI, /metrics and the API, which Caddy
+      # doesn't expose publicly.
       - "${INTERFACE:?}:8888:8888"
     networks:
       - satellite

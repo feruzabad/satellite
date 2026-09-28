@@ -15,9 +15,6 @@ services:
     pids_limit: 256
     environment:
       MEDIAFLOW_DOMAIN: "${MEDIAFLOW_DOMAIN:?}"
-      MEDIAFLOW_ADMIN: "${MEDIAFLOW_ADMIN:-off}"
-      MEDIAFLOW_ADMIN_USER: "${MEDIAFLOW_ADMIN_USER:-}"
-      MEDIAFLOW_ADMIN_HASH: "${MEDIAFLOW_ADMIN_HASH:-}"
       ALTMOUNT_DOMAIN: "${ALTMOUNT_DOMAIN:?}"
       TLS: "${TLS}"
     logging:

@@ -39,8 +39,8 @@ services:
         max-size: "10m"
         max-file: "3"
     ports:
-      # Private access (SSH tunnel or VPN) to the web UI and the API AIOStreams
-      # calls. Caddy only exposes the player stream endpoint publicly.
+      # Tailnet-only access to the web UI and the API AIOStreams calls. Caddy
+      # only exposes the player stream endpoint publicly.
       - "${INTERFACE:?}:8080:8080"
     volumes:
       # Config, database and NZB metadata (metadata.root_path defaults to

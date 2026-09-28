@@ -16,24 +16,6 @@
 	}
 }
 
-# Public access to MediaFlow's web UI and metrics, picked by MEDIAFLOW_ADMIN
-# (see .env.example). Only the imported snippet is parsed, so the unused
-# one's empty variables are harmless.
-(mediaflow_admin_off) {
-	handle @mediaflow_admin {
-		respond 404
-	}
-}
-
-(mediaflow_admin_basic_auth) {
-	handle @mediaflow_admin {
-		basic_auth {
-			{$MEDIAFLOW_ADMIN_USER} {$MEDIAFLOW_ADMIN_HASH}
-		}
-		reverse_proxy mediaflow:8888
-	}
-}
-
 {$MEDIAFLOW_DOMAIN} {
 	{$TLS}
 	import security
@@ -41,9 +23,12 @@
 
 	# Web UI (landing page, URL/playlist builders, speedtest; no auth of its
 	# own) and usage metrics (?api_password=). Players only need the proxy
-	# endpoints, so these stay off the public site unless enabled.
+	# endpoints; these are reachable over the tailnet at mediaflow's
+	# INTERFACE port instead.
 	@mediaflow_admin path / /metrics /speedtest /speedtest/* /logo.png /speedtest.js *.html
-	import mediaflow_admin_{$MEDIAFLOW_ADMIN}
+	handle @mediaflow_admin {
+		respond 404
+	}
 
 	handle {
 		reverse_proxy mediaflow:8888
@@ -56,8 +41,8 @@
 	import noindex
 
 	# Players only need the stream endpoint, authorized by the download_key in
-	# its URL. The web UI, API, WebDAV and SABnzbd API stay private: AIOStreams
-	# calls them over altmount's INTERFACE port.
+	# its URL. The web UI, API, WebDAV and SABnzbd API stay on the tailnet:
+	# AIOStreams calls them over altmount's INTERFACE port.
 	handle /api/files/stream {
 		reverse_proxy altmount:8080
 	}
