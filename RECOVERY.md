@@ -74,21 +74,26 @@ survive losing the server.
    cp -R restore-env/. . && rm -rf restore-env
    ```
 
-5. Bring the stack up:
+5. Update the value that is tied to the old host: `mediaflow/.env`
+   `INTERFACE`, the new server's Tailscale IP (`tailscale ip -4`).
+
+6. Bring the stack up:
    ```sh
    task up
    ```
 
-6. Re-apply what lives outside the repo, since none of it was backed up:
+7. Re-apply what lives outside the repo, since none of it was backed up:
    - Provider firewall rules (allow 443/tcp, 80/tcp, 443/udp inbound, deny
      the rest). On Oracle Cloud: the subnet's security list or the
      instance's NSG.
    - DNS: if the server's public IP changed, update `MEDIAFLOW_DOMAIN`'s
      A/AAAA records.
 
-7. Verify:
+8. Verify:
    ```sh
    docker ps
    tailscale status
    curl https://<MEDIAFLOW_DOMAIN>/health
    ```
+   Confirm MediaFlow's web UI loads over the tailnet at
+   `http://<tailscale-ip>:8888`.

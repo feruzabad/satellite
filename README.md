@@ -23,8 +23,9 @@ nothing but Caddy is public. SSH and any admin access go over the tailnet.
 
 - MediaFlow Proxy Light: API-compatible with the Python MediaFlow, a single
   Rust binary with flat memory use, stateless (no volume)
-- Caddy in front, with real Let's Encrypt certs; MediaFlow's unauthenticated
-  `/metrics` is not exposed
+- Caddy in front, with real Let's Encrypt certs, exposing only MediaFlow's
+  proxy endpoints; its web UI and `/metrics` (both unauthenticated) are
+  reachable only over the tailnet at `http://<tailscale-ip>:8888`
 - Automated restic backup/prune/check jobs, covering Caddy's data and every
   service's `.env`; local by default, optionally offsite (e.g. Cloudflare R2)
 - One `compose.yaml` per service, sharing an external Docker network
@@ -63,7 +64,7 @@ address.
 | Service     | Folder       | Description                        | Exposure  |
 |-------------|--------------|------------------------------------|-----------|
 | `caddy`     | `caddy/`     | Reverse proxy, automatic HTTPS     | External  |
-| `mediaflow` | `mediaflow/` | Streaming proxy for AIOStreams     | External  |
+| `mediaflow` | `mediaflow/` | Streaming proxy for AIOStreams     | External (proxy), Tailscale (UI, metrics) |
 | `backup`    | `backup/`    | restic backup / prune / check jobs | n/a       |
 
 ## Getting Started
@@ -103,6 +104,8 @@ Each service reads only its own `<service>/.env` (see the `.env.example`
 next to it for the full, documented template). Key things you'll want to set:
 
 - `mediaflow/.env` `API_PASSWORD`: protects every proxy endpoint
+- `mediaflow/.env` `INTERFACE`: the host's Tailscale IP (`tailscale ip -4`);
+  the web UI and `/metrics` are only reachable here
 - `caddy/.env` `MEDIAFLOW_DOMAIN`: MediaFlow's public hostname
 - `caddy/.env` `TLS`: `tls internal` for local dev, empty in production
 - `backup/.env` `RESTIC_PASSWORD` / `RESTIC_REPOSITORY`: as in Apollo

@@ -21,8 +21,11 @@
 	import security
 	import noindex
 
-	# MediaFlow serves usage metrics without auth; nothing needs them publicly.
-	handle /metrics {
+	# Web UI (landing page, URL/playlist builders, speedtest) and usage
+	# metrics are unauthenticated; only the proxy endpoints need to be public.
+	# Both stay reachable over Tailscale on mediaflow's own port.
+	@internal path / /metrics /speedtest /speedtest/* /logo.png /speedtest.js *.html
+	handle @internal {
 		respond 404
 	}
 
