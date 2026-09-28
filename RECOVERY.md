@@ -85,6 +85,8 @@ survive losing the server.
 
 6. Bring the stack up:
    ```sh
+   sudo install -Dm644 host/wait-for-tailscale.conf /etc/systemd/system/docker.service.d/wait-for-tailscale.conf
+   sudo systemctl daemon-reload
    task up
    ```
 

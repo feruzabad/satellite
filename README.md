@@ -100,8 +100,15 @@ git clone https://github.com/yarimadam/satellite.git
 cd satellite
 for d in */; do [ -f "$d.env.example" ] && cp "$d.env.example" "$d.env"; done
 # fill in each */.env with your domain and secrets
+sudo install -Dm644 host/wait-for-tailscale.conf /etc/systemd/system/docker.service.d/wait-for-tailscale.conf
+sudo systemctl daemon-reload
 task up
 ```
+
+Every service restarts with Docker (`restart: unless-stopped`), so the stack
+comes back on boot by itself. The `host/` drop-in makes Docker wait for
+Tailscale first: services publishing ports on the Tailscale IP would fail to
+start, and stay down, if Docker won the race.
 
 ### Usage
 
