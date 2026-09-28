@@ -21,9 +21,9 @@
 	import security
 	import noindex
 
-	# Web UI (landing page, URL/playlist builders, speedtest) and usage
-	# metrics are unauthenticated; only the proxy endpoints need to be public.
-	# Both stay reachable over Tailscale on mediaflow's own port.
+	# Web UI (landing page, URL/playlist builders, speedtest, unauthenticated)
+	# and usage metrics (?api_password=) aren't needed publicly; only the proxy
+	# endpoints are. Both stay reachable over Tailscale on mediaflow's own port.
 	@internal path / /metrics /speedtest /speedtest/* /logo.png /speedtest.js *.html
 	handle @internal {
 		respond 404

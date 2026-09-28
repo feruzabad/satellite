@@ -24,7 +24,7 @@ nothing but Caddy is public. SSH and any admin access go over the tailnet.
 - MediaFlow Proxy Light: API-compatible with the Python MediaFlow, a single
   Rust binary with flat memory use, stateless (no volume)
 - Caddy in front, with real Let's Encrypt certs, exposing only MediaFlow's
-  proxy endpoints; its web UI and `/metrics` (both unauthenticated) are
+  proxy endpoints; its web UI and `/metrics` (`?api_password=`) are
   reachable only over the tailnet at `http://<tailscale-ip>:8888`
 - Automated restic backup/prune/check jobs, covering Caddy's data and every
   service's `.env`; local by default, optionally offsite (e.g. Cloudflare R2)
