@@ -1,0 +1,31 @@
+services:
+  mediaflow:
+    image: ghcr.io/mhdzumair/mediaflow-proxy-light:1.1.2
+    container_name: mediaflow
+    restart: unless-stopped
+    # distroless "nonroot"; the image defaults to root but needs no privileges.
+    user: "65532:65532"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # Stateless: caches live in memory, nothing is written to disk.
+    read_only: true
+    pids_limit: 256
+    # No healthcheck: the image is distroless (no shell, no curl) and the
+    # binary has no health subcommand. Check GET /health from outside instead.
+    environment:
+      API_PASSWORD: "${API_PASSWORD:?}"
+      # On by default, but the image ships no ffmpeg.
+      APP__TRANSCODE__ENABLED: "false"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - satellite
+
+networks:
+  satellite:
+    external: true

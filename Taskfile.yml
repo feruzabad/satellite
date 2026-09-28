@@ -1,0 +1,58 @@
+version: "3"
+
+tasks:
+  network:
+    desc: Create the satellite docker networks if they don't exist
+    silent: true
+    cmds:
+      - docker network inspect satellite >/dev/null 2>&1 || docker network create satellite
+      # Dual-stack, Caddy only: published ports get kernel DNAT on IPv6 too,
+      # instead of docker-proxy, which hides the real client address.
+      - docker network inspect satellite_edge >/dev/null 2>&1 || docker network create --ipv6 satellite_edge
+
+  up:mediaflow:
+    desc: Start MediaFlow Proxy Light
+    deps: [network]
+    cmds:
+      - docker compose --env-file mediaflow/.env -f mediaflow/compose.yaml up -d
+
+  down:mediaflow:
+    desc: Stop MediaFlow Proxy Light
+    cmds:
+      - docker compose --env-file mediaflow/.env -f mediaflow/compose.yaml down
+
+  up:caddy:
+    desc: Start Caddy
+    deps: [network]
+    cmds:
+      - docker compose --env-file caddy/.env -f caddy/compose.yaml up -d
+
+  down:caddy:
+    desc: Stop Caddy
+    cmds:
+      - docker compose --env-file caddy/.env -f caddy/compose.yaml down
+
+  up:backup:
+    desc: Start backups (restic, dedicated container per job)
+    deps: [network]
+    cmds:
+      - docker compose --env-file backup/.env -f backup/compose.yaml up -d
+
+  down:backup:
+    desc: Stop backups
+    cmds:
+      - docker compose --env-file backup/.env -f backup/compose.yaml down
+
+  up:
+    desc: Start all services
+    cmds:
+      - task: up:mediaflow
+      - task: up:caddy
+      - task: up:backup
+
+  down:
+    desc: Stop all services
+    cmds:
+      - task: down:backup
+      - task: down:caddy
+      - task: down:mediaflow
