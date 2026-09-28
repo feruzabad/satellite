@@ -10,7 +10,8 @@ survive losing the server.
 
 ## Prerequisites on the new server
 
-- Docker, Task, Tailscale installed and Tailscale authenticated (see README).
+- Docker and Task installed, and your private access method set up if it
+  needs the host (e.g. VPN installed and authenticated; see README).
 - The bootstrap secrets, from a password manager (never only on the server
   itself): `RESTIC_PASSWORD`, and if using offsite storage also
   `RESTIC_REPOSITORY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
@@ -75,7 +76,8 @@ survive losing the server.
    ```
 
 5. Update the value that is tied to the old host: `mediaflow/.env`
-   `INTERFACE`, the new server's Tailscale IP (`tailscale ip -4`).
+   `INTERFACE`, if it was a VPN IP (e.g. `tailscale ip -4` on the new
+   server). `127.0.0.1` needs no change.
 
 6. Bring the stack up:
    ```sh
@@ -92,8 +94,7 @@ survive losing the server.
 8. Verify:
    ```sh
    docker ps
-   tailscale status
    curl https://<MEDIAFLOW_DOMAIN>/health
    ```
-   Confirm MediaFlow's web UI loads over the tailnet at
-   `http://<tailscale-ip>:8888`.
+   Confirm MediaFlow's web UI loads through your private access method
+   (`http://<INTERFACE>:8888`, or `http://localhost:8888` via an SSH tunnel).

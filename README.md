@@ -1,8 +1,7 @@
 # Satellite
 
-> A personal VPS stack: services whose traffic should leave from a different
-> server than [Apollo](https://github.com/yarimadam/apollo)'s, behind a single
-> reverse proxy.
+> A small, hardened VPS stack for services whose traffic should leave from a
+> separate server, behind a single reverse proxy.
 
 ![Docker Compose](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)
 ![Caddy](https://img.shields.io/badge/reverse%20proxy-caddy-1F88C0?logo=caddy&logoColor=white)
@@ -12,20 +11,24 @@
 Satellite runs [MediaFlow Proxy Light](https://github.com/mhdzumair/mediaflow-proxy-light),
 the Rust rewrite of [MediaFlow Proxy](https://github.com/mhdzumair/mediaflow-proxy),
 behind [Caddy](https://caddyserver.com/), with automated [restic](https://restic.net/)
-backups, orchestrated with [Task](https://taskfile.dev). Apollo's AIOStreams
-routes usenet playback through MediaFlow, so stream traffic leaves from this
-server instead of Apollo's.
+backups, orchestrated with [Task](https://taskfile.dev). Point
+[AIOStreams](https://github.com/Viren070/AIOStreams) (or any MediaFlow client)
+at it, and the streams it proxies are fetched and served from this server
+instead of the one running your addons. It's a companion to
+[Apollo](https://github.com/yarimadam/apollo), but doesn't depend on it.
 
-Same conventions as Apollo: opinionated, **Tailscale is mandatory**, and
-nothing but Caddy is public. SSH and any admin access go over the tailnet.
+This is an opinionated setup: only Caddy is public, and everything else binds
+to `127.0.0.1` by default. How you reach the private parts is your choice: an
+SSH tunnel, or a private network such as [Tailscale](https://tailscale.com/)
+or WireGuard. See [Private access](#private-access).
 
 ## Features
 
 - MediaFlow Proxy Light: API-compatible with the Python MediaFlow, a single
   Rust binary with flat memory use, stateless (no volume)
 - Caddy in front, with real Let's Encrypt certs, exposing only MediaFlow's
-  proxy endpoints; its web UI and `/metrics` (`?api_password=`) are
-  reachable only over the tailnet at `http://<tailscale-ip>:8888`
+  proxy endpoints. Its web UI and `/metrics` stay private unless you opt into
+  serving them behind a Caddy login
 - Automated restic backup/prune/check jobs, covering Caddy's data and every
   service's `.env`; local by default, optionally offsite (e.g. Cloudflare R2)
 - One `compose.yaml` per service, sharing an external Docker network
@@ -39,7 +42,7 @@ nothing but Caddy is public. SSH and any admin access go over the tailnet.
 
 ```
                          ┌──────────────┐
-   Internet ─────────────▶    Caddy     │──────▶ MediaFlow (external)
+   Internet ─────────────▶    Caddy     │──────▶ MediaFlow proxy endpoints
                          │ (reverse     │
                          │  proxy)      │
                          └──────────────┘
@@ -49,6 +52,8 @@ nothing but Caddy is public. SSH and any admin access go over the tailnet.
                          ┌─────────────┐
                          │   Backups   │
                          └─────────────┘
+
+   SSH tunnel / VPN ─────▶ MediaFlow :8888 (web UI, /metrics, API)
 ```
 
 Every service lives in its own folder with its own `compose.yaml` and
@@ -61,11 +66,11 @@ address.
 
 ## Services
 
-| Service     | Folder       | Description                        | Exposure  |
-|-------------|--------------|------------------------------------|-----------|
-| `caddy`     | `caddy/`     | Reverse proxy, automatic HTTPS     | External  |
-| `mediaflow` | `mediaflow/` | Streaming proxy for AIOStreams     | External (proxy), Tailscale (UI, metrics) |
-| `backup`    | `backup/`    | restic backup / prune / check jobs | n/a       |
+| Service     | Folder       | Description                        | Exposure                                  |
+|-------------|--------------|------------------------------------|-------------------------------------------|
+| `caddy`     | `caddy/`     | Reverse proxy, automatic HTTPS     | Public                                    |
+| `mediaflow` | `mediaflow/` | Streaming proxy                    | Public (proxy), private (UI, metrics)     |
+| `backup`    | `backup/`    | restic backup / prune / check jobs | n/a                                       |
 
 ## Getting Started
 
@@ -73,15 +78,17 @@ address.
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Task](https://taskfile.dev/installation/)
-- [Tailscale](https://tailscale.com/), installed and running on the host
-- Provider firewall allowing 80/tcp, 443/tcp and 443/udp inbound, and
-  nothing else public (on Oracle Cloud: the subnet's security list or the
-  instance's NSG)
+- A domain pointing at the server
+- Provider firewall allowing 80/tcp, 443/tcp and 443/udp inbound, and nothing
+  else public. On Oracle Cloud that means the subnet's security list or the
+  instance's NSG, as well as the host's iptables.
+- Optional: a VPN on the host (Tailscale, WireGuard, …), if you'd rather not
+  use SSH tunnels
 
 ### Installation
 
 ```sh
-git clone <this-repo>
+git clone https://github.com/yarimadam/satellite.git
 cd satellite
 for d in */; do [ -f "$d.env.example" ] && cp "$d.env.example" "$d.env"; done
 # fill in each */.env with your domain and secrets
@@ -104,18 +111,52 @@ Each service reads only its own `<service>/.env` (see the `.env.example`
 next to it for the full, documented template). Key things you'll want to set:
 
 - `mediaflow/.env` `API_PASSWORD`: protects every proxy endpoint
-- `mediaflow/.env` `INTERFACE`: the host's Tailscale IP (`tailscale ip -4`);
-  the web UI and `/metrics` are only reachable here
+- `mediaflow/.env` `INTERFACE`: where MediaFlow's own port binds (see
+  [Private access](#private-access))
 - `caddy/.env` `MEDIAFLOW_DOMAIN`: MediaFlow's public hostname
 - `caddy/.env` `TLS`: `tls internal` for local dev, empty in production
-- `backup/.env` `RESTIC_PASSWORD` / `RESTIC_REPOSITORY`: as in Apollo
-
-A few values connect Satellite to Apollo, so they must match there:
-
-- AIOStreams' Proxy settings: MediaFlow URL `https://<MEDIAFLOW_DOMAIN>` and
-  `mediaflow/.env` `API_PASSWORD`
+- `caddy/.env` `MEDIAFLOW_ADMIN`: `off`, or `basic_auth` to serve the web UI
+  publicly behind a login
+- `backup/.env` `RESTIC_PASSWORD`: encrypts your backup repository
+- `backup/.env` `RESTIC_REPOSITORY`: optional restic backend URL for offsite
+  backups; leave empty for local-only
 
 `.env` files are git-ignored, never commit them.
+
+### Private access
+
+MediaFlow's web UI, `/metrics` and API are on its own port 8888, published
+only on `mediaflow/.env` `INTERFACE`. Pick one:
+
+- **SSH tunnel** (default, `INTERFACE=127.0.0.1`): nothing else to install.
+  ```sh
+  ssh -L 8888:127.0.0.1:8888 user@server
+  # then open http://localhost:8888
+  ```
+- **VPN** (`INTERFACE=<the host's VPN IP>`, e.g. `tailscale ip -4`): reach
+  `http://<vpn-ip>:8888` from any device on that network. A server running
+  AIOStreams on the same network can also use it for API calls (see below).
+- **Caddy login** (`caddy/.env` `MEDIAFLOW_ADMIN=basic_auth`): the UI on the
+  public domain, behind a password. For hosts where neither of the above is
+  possible. Anyone who finds the domain sees the login prompt.
+
+Never set `INTERFACE` to a public IP or `0.0.0.0`: that would expose port
+8888 without Caddy's TLS and path filtering.
+
+### AIOStreams
+
+In AIOStreams' **Proxy** settings, choose MediaFlow and set:
+
+| Field      | Value                                                                  |
+|------------|------------------------------------------------------------------------|
+| URL        | `https://<MEDIAFLOW_DOMAIN>`, or `http://<vpn-ip>:8888` over a VPN     |
+| Public URL | `https://<MEDIAFLOW_DOMAIN>` when URL is the VPN address, else empty  |
+| Credentials| `mediaflow/.env` `API_PASSWORD`                                        |
+
+AIOStreams calls MediaFlow's API at **URL** and rewrites the stream links to
+**Public URL**, so players always get the public domain. Streams from
+AIOStreams' built-in usenet engine are never proxied (AIOStreams serves them
+itself), so MediaFlow only carries the other streams you enable proxying for.
 
 See [RECOVERY.md](RECOVERY.md) for restoring onto a fresh server from backup.
 
@@ -127,3 +168,4 @@ See [RECOVERY.md](RECOVERY.md) for restoring onto a fresh server from backup.
 
 - [MediaFlow Proxy Light](https://github.com/mhdzumair/mediaflow-proxy-light)
 - [Caddy](https://github.com/caddyserver/caddy)
+- [restic](https://github.com/restic/restic)
