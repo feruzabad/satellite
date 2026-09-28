@@ -76,6 +76,7 @@ address.
 | `caddy`     | `caddy/`     | Reverse proxy, automatic HTTPS     | Public                                    |
 | `mediaflow` | `mediaflow/` | Streaming proxy                    | Public (proxy), Tailscale (UI, metrics)   |
 | `altmount`  | `altmount/`  | Usenet streaming (NZB to WebDAV)   | Public (streams), Tailscale (UI, API)     |
+| `ballast`   | `ballast/`   | Holds RAM against idle reclamation | n/a (no network)                          |
 | `backup`    | `backup/`    | restic backup / prune / check jobs | n/a                                       |
 
 ## Getting Started
@@ -126,6 +127,8 @@ next to it for the full, documented template). Key things you'll want to set:
 - `caddy/.env` `MEDIAFLOW_DOMAIN`: MediaFlow's public hostname
 - `caddy/.env` `ALTMOUNT_DOMAIN`: AltMount's public hostname
 - `caddy/.env` `TLS`: `tls internal` for local dev, empty in production
+- `ballast/.env` `SIZE_MB`: RAM held by the ballast (see
+  [Oracle Always Free](#oracle-always-free))
 - `backup/.env` `RESTIC_PASSWORD`: encrypts your backup repository
 - `backup/.env` `RESTIC_REPOSITORY`: optional restic backend URL for offsite
   backups; leave empty for local-only
@@ -190,6 +193,18 @@ your indexer (or NZBHydra2) must be reachable from this server under the
 host name in its links. For NZBHydra2 on another tailnet host, point
 AIOStreams at Hydra's MagicDNS name (e.g. Apollo's `aiostreams/.env`
 `BUILTIN_NZBHYDRA_URL`), since Hydra builds its links from that address.
+
+### Oracle Always Free
+
+Oracle reclaims Always Free instances it deems idle: over 7 days, CPU
+(95th percentile), network and, on A1 shapes, memory all below 20%. Staying
+above 20% on any one is enough, and memory is the cheapest: the `ballast`
+service fills an in-memory filesystem with `SIZE_MB` once at startup, then
+sleeps, with no network and no CPU use. Size it so the host's total memory
+use stays above 20% with a margin, and lower it as real services grow.
+Oracle's view is the `MemoryUtilization` metric in the instance's
+monitoring; the Oracle Cloud Agent's Compute Instance Monitoring plugin must
+be enabled to report it. Not on Oracle? Leave it out: `task down:ballast`.
 
 See [RECOVERY.md](RECOVERY.md) for restoring onto a fresh server from backup.
 

@@ -1,0 +1,26 @@
+services:
+  ballast:
+    image: alpine:3.24.2
+    container_name: ballast
+    restart: unless-stopped
+    # Holds a fixed amount of RAM so Oracle doesn't reclaim the Always Free
+    # instance as idle (see .env.example). Needs nothing else: no network,
+    # no writable root, no capabilities, unprivileged user.
+    network_mode: none
+    user: "65534:65534"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    pids_limit: 8
+    tmpfs:
+      - /ballast:size=${SIZE_MB:?}m,mode=1777
+    # Fill the in-memory filesystem once, then sleep: no CPU after startup.
+    # tmpfs pages can't be reclaimed without swap, so they count as used.
+    command: ["sh", "-c", "dd if=/dev/zero of=/ballast/fill bs=1M count=${SIZE_MB:?} 2>/dev/null && exec sleep infinity"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "1"

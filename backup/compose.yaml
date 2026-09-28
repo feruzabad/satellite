@@ -34,6 +34,7 @@ services:
       - altmount_data:/mnt/volumes/altmount:ro
       - ../mediaflow/.env:/mnt/volumes/env/mediaflow/.env:ro
       - ../altmount/.env:/mnt/volumes/env/altmount/.env:ro
+      - ../ballast/.env:/mnt/volumes/env/ballast/.env:ro
       - ../caddy/.env:/mnt/volumes/env/caddy/.env:ro
       - ../backup/.env:/mnt/volumes/env/backup/.env:ro
       - ./restic-repo:/mnt/restic

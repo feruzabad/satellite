@@ -43,6 +43,16 @@ tasks:
     cmds:
       - docker compose --env-file caddy/.env -f caddy/compose.yaml down
 
+  up:ballast:
+    desc: Start the memory ballast (keeps an Oracle Always Free instance from being reclaimed as idle)
+    cmds:
+      - docker compose --env-file ballast/.env -f ballast/compose.yaml up -d
+
+  down:ballast:
+    desc: Stop the memory ballast
+    cmds:
+      - docker compose --env-file ballast/.env -f ballast/compose.yaml down
+
   up:backup:
     desc: Start backups (restic, dedicated container per job)
     deps: [network]
@@ -60,12 +70,14 @@ tasks:
       - task: up:mediaflow
       - task: up:altmount
       - task: up:caddy
+      - task: up:ballast
       - task: up:backup
 
   down:
     desc: Stop all services
     cmds:
       - task: down:backup
+      - task: down:ballast
       - task: down:caddy
       - task: down:altmount
       - task: down:mediaflow
