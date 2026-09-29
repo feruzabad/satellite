@@ -130,7 +130,9 @@ next to it for the full, documented template). Key things you'll want to set:
   MediaFlow's own port binds only there
 - `altmount/.env` `JWT_SECRET`: signs AltMount's web UI sessions
 - `altmount/.env` `INTERFACE`: the same Tailscale IP; AltMount's own port
-  binds only there, and it's the address you open its web UI at
+  binds only there
+- `altmount/.env` `UI_HOST`: the host name you open AltMount's web UI at
+  (e.g. its MagicDNS name); the login cookie is tied to it
 - `caddy/.env` `MEDIAFLOW_DOMAIN`: MediaFlow's public hostname
 - `caddy/.env` `ALTMOUNT_DOMAIN`: AltMount's public hostname
 - `caddy/.env` `TLS`: `tls internal` for local dev, empty in production
@@ -149,8 +151,9 @@ AltMount's web UI, API and WebDAV on port 8080, each published only on its
 `.env` `INTERFACE`: the host's Tailscale IP. From any device on your tailnet:
 
 - MediaFlow: `http://<host>.<tailnet>.ts.net:8888`
-- AltMount: `http://<tailscale-ip>:8080`, by IP: it's the login cookie's
-  domain, so the MagicDNS name won't stay logged in
+- AltMount: `http://<host>.<tailnet>.ts.net:8080`, with `altmount/.env`
+  `UI_HOST` set to that name: it's the login cookie's domain, so logins only
+  stick on that exact host (empty: the Tailscale IP)
 
 AltMount's first start opens registration: the first account created in its
 web UI becomes the admin, and registration closes after it. Create it right
